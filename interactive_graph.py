@@ -2,14 +2,9 @@ import numpy as np
 import pygame
 from pygame.locals import *
 
+from config import *
 from graph import Graph
-
-NODE_COLOR = [124, 38, 242]
-NODE_COLOR_FOCUS = [240, 38, 242]
-NODE_COLOR_BASE = [40, 238, 102]
-NODE_RADIUS = 10
-
-BLACK = (0, 0, 0)
+from simplicial_complex import SimplicialComplex
 
 
 class InteractiveGraph:
@@ -23,6 +18,11 @@ class InteractiveGraph:
         self.edge_mode = None
 
         self.base_point = None
+
+        self.interactive_barcode = None
+
+    def bind_interactive_barcode(self, interactive_barcode):
+        self.interactive_barcode = interactive_barcode
 
     def draw(self):
         if self.edge_mode is not None:
@@ -43,6 +43,12 @@ class InteractiveGraph:
         if self.base_point is not None:
             pygame.draw.circle(self.window, NODE_COLOR_BASE, self.base_point[0], int(NODE_RADIUS * 0.8))
             pygame.draw.circle(self.window, BLACK, self.base_point[0], int(NODE_RADIUS * 0.8), 1)
+
+        if not self.graph.is_connected:
+            text = str('Graph is not connected (or less than 2 nodes)')
+            font = pygame.font.Font('freesansbold.ttf', 10)
+            text = font.render(text, True, (255, 0, 0))
+            self.window.blit(text, (0, 0))
 
     def handle_event(self, event):
         if event.type == MOUSEBUTTONDOWN:
@@ -76,6 +82,8 @@ class InteractiveGraph:
         return None
 
     def update_base_point(self, x, y):
+        if not self.graph.is_connected:
+            return
         base_point = self.find_closest_point_on_edge(x, y)
         if base_point is not None:
             if type(base_point) == int:
@@ -84,6 +92,22 @@ class InteractiveGraph:
                 u, v, alpha = base_point
                 position = (1 - alpha) * self.node_positions[u] + alpha * self.node_positions[v]
                 self.base_point = (position.astype(int), True, (u, v, alpha))
+
+        self.update_barcode()
+
+    def update_barcode(self):
+        if self.base_point is None:
+            return
+
+        if self.base_point[1]:
+            u, v, alpha = self.base_point[2]
+            graph, base_point = self.graph.copy_and_insert_base_point(u, v, alpha)
+        else:
+            graph, base_point = self.graph, self.base_point[2]
+
+        filtration = SimplicialComplex.from_graph_extended(graph, base_point)
+        self.interactive_barcode.intervals = filtration.get_barcode()
+        print(self.interactive_barcode.intervals)
 
     def find_closest_point_on_edge(self, x, y):
         min_distance = 100000
@@ -96,11 +120,9 @@ class InteractiveGraph:
             x = x_ - self.node_positions[u][0]
             y = y_ - self.node_positions[u][1]
             d = abs(normal.dot([x, y]))
-            print(d, normal)
             if d < min_distance:
                 # Check projection belongs to the segment
                 alpha = - normal[1] * x + normal[0] * y
-                # print(alpha, self.graph[u][v])
                 if 0 <= alpha <= self.graph[u][v]:
                     min_distance = d
                     min_point = (u, v, alpha / self.graph[u][v])
