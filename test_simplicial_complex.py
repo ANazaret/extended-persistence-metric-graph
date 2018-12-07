@@ -30,7 +30,7 @@ class TestSimplicialComplex(TestCase):
         sc.add_simplex(Simplex(2, 1, [0, 1]))
         sc.update_indexes()
 
-        barcode = sc.get_barcode()
+        barcode = sc.get_extended_barcode()
         self.assertListEqual(barcode, [(0, 0, inf), (0, 1, 2)])
 
         sc = SimplicialComplex()
@@ -44,5 +44,5 @@ class TestSimplicialComplex(TestCase):
         sc.add_simplex(Simplex(8, 1, [2, 3]))
         sc.update_indexes()
 
-        barcode = sc.get_barcode()
+        barcode = sc.get_extended_barcode()
         self.assertListEqual(barcode, [(0, 0, inf), (0, 1, 2), (0, 3, 4), (0, 5, 6), (1, 8, inf)])

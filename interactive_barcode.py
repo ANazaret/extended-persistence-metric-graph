@@ -1,6 +1,7 @@
 import numpy as np
 import pygame
 
+from pygame.locals import *
 from config import *
 
 
@@ -11,6 +12,15 @@ class InteractiveBarcode:
         self.window_size = WINDOW_SIZE
         self.barcode_size = BARCODE_SIZE
         self.intervals = []
+
+        self.reverse_barcode = False
+        self.reverse_mapping = False
+        self.reeb = None
+
+    def handle_event(self, event):
+        if event.type == KEYDOWN:
+            if event.key == K_r:
+                self.reverse_barcode ^= True
 
     def draw(self):
         pygame.draw.line(self.window, BLACK,
@@ -29,6 +39,14 @@ class InteractiveBarcode:
                          self.origin + [self.barcode_size, 0],
                          self.origin + [0, self.barcode_size])
 
-        for d, s, e in self.intervals:
-            pygame.draw.circle(self.window, COLORS_DIM[d],
+        for d, s, e, t in self.intervals:
+            pygame.draw.circle(self.window, COLORS_DIM_TYPE[d][t.value],
                                [int(s / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - e / 2)], 5)
+            if self.reverse_barcode and (d, s, e, t) in self.reverse_mapping:
+                birth, death = self.reverse_mapping[(d, s, e, t)]
+                pygame.draw.line(self.window, GREEN_B,
+                                 [int(s / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - e / 2)],
+                                 self.reeb.node_positions[birth])
+                pygame.draw.line(self.window, RED_B,
+                                 [int(s / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - e / 2)],
+                                 self.reeb.node_positions[death])

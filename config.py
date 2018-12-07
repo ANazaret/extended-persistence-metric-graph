@@ -11,7 +11,9 @@ BLACK = (0, 0, 0)
 
 RED_B = (217, 83, 79)
 BLUE_B = (66, 139, 202)
+GREEN_B = (92, 184, 92)
 
-COLORS_DIM = [BLUE_B, RED_B]
+COLORS_DIM_TYPE = [[BLACK, BLUE_B],
+                   [BLACK, RED_B, GREEN_B]]
 
 EPSILON = 1e-5

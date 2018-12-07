@@ -2,6 +2,7 @@ import collections
 import math
 from typing import Tuple, Iterator
 
+from datamodels import IntervalType
 from graph import Graph
 from matrix import Matrix
 
@@ -41,9 +42,11 @@ class SimplicialComplex:
         for u, v, _ in graph.iter_edges():
             sc.add_simplex(Simplex(max(distances[u], distances[v]), 1, [u, v]))
 
-        # Insert infinity point at time maxi
-        infinity_point = max(distances.keys()) + 1
+        # Insert infinity point at time maxi (remove it from the barcode, dim = 0)
+        maxi += 5
+        infinity_point = graph.number_of_nodes
         sc.add_simplex(Simplex(maxi, 0, [infinity_point]))
+        maxi += 5
 
         # Insert edges of extended persistence (link vertices to infinity_point)
         for v, d in distances.items():
@@ -74,13 +77,21 @@ class SimplicialComplex:
                 matrix.set_one(self.simplicies_indexes[facet], i)
         return matrix
 
-    def get_barcode(self):
+    def get_extended_barcode(self):
         boundary_matrix = self.compute_boundary_matrix()
         pivots = boundary_matrix.reduce()
 
         # Fix extended persistence trick that changes the time value
-        fix = (lambda x: 2 * self.extended_infinity - x if x > self.extended_infinity else x) if (
-                self.extended_infinity is not None) else lambda x: x
+        def to_extended(dimension_, start_, end_):
+            interval_type = IntervalType.from_tricked_interval(start_, end_, self.extended_infinity)
+            if end_ == math.inf:
+                end_ = self.extended_infinity
+            if start_ > self.extended_infinity:
+                start_ = 2 * self.extended_infinity - start_
+            if end_ > self.extended_infinity:
+                end_ = 2 * self.extended_infinity - end_
+
+            return dimension_, start_, end_, interval_type
 
         intervals = []
         zero_columns = boundary_matrix.get_zero_columns()
@@ -94,13 +105,10 @@ class SimplicialComplex:
             else:
                 end = math.inf
 
-            intervals.append((simplex.dimension, fix(simplex.appearance), fix(end)))
-
-        if self.extended_infinity is not None:
-            # We have to fix the extended persistence with the inf interval
-            for i, (d, s, e) in enumerate(intervals):
-                if e == -math.inf:
-                    intervals[i] = (d, s, self.extended_infinity)
+            if self.extended_infinity - 2 > simplex.appearance > self.extended_infinity - 8:
+                # Remove the interval created by infinity point
+                continue
+            intervals.append(to_extended(simplex.dimension, simplex.appearance, end))
 
         return intervals
 

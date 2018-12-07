@@ -27,6 +27,8 @@ else:
 interactive_barcode = InteractiveBarcode(window)
 interactive_graph.bind_interactive_barcode(interactive_barcode)
 
+trace_activated = False
+
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -36,11 +38,18 @@ while True:
             if event.pos[0] < WINDOW_SIZE:
                 interactive_graph.handle_event(event)
 
+        interactive_barcode.handle_event(event)
         if event.type == KEYDOWN:
             if event.key == K_s:
                 interactive_graph.write()
+            if event.key == K_t:
+                trace_activated ^= True
 
-    window.fill((255, 255, 255))
+    if trace_activated:
+        pygame.draw.rect(window, (255, 255, 255), Rect([0, 0], [WINDOW_SIZE, WINDOW_SIZE]))
+    else:
+        window.fill((255, 255, 255))
+
     pygame.draw.line(window, (0, 0, 0), [WINDOW_SIZE, 0], [WINDOW_SIZE, WINDOW_SIZE])
     interactive_graph.draw()
     interactive_barcode.draw()

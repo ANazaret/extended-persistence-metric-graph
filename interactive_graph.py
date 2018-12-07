@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 from pygame.locals import *
 
+import utils
 from config import *
 from graph import Graph
 from simplicial_complex import SimplicialComplex
@@ -61,7 +62,7 @@ class InteractiveGraph:
 
         if not self.graph.is_connected:
             text = str('Graph is not connected (or less than 2 nodes)')
-            font = pygame.font.Font('freesansbold.ttf', 10)
+            font = pygame.font.Font('freesansbold.ttf', 15)
             text = font.render(text, True, (255, 0, 0))
             self.window.blit(text, (0, 0))
 
@@ -126,14 +127,18 @@ class InteractiveGraph:
         self.reebified = graph
 
         filtration = SimplicialComplex.from_graph_extended(graph, base_point)
-        barcode = filtration.get_barcode()
+        barcode = filtration.get_extended_barcode()
+
         self.interactive_barcode.intervals = barcode
+        self.interactive_barcode.reverse_mapping = utils.map_barcode_to_graph_vertices(
+            barcode, filtration, graph, base_point)
+        self.interactive_barcode.reeb = graph
 
         mini = inf
         for i in range(len(barcode)):
-            _, si, ei = barcode[i]
+            _, si, ei, _ = barcode[i]
             for j in range(i):
-                _, sj, ej = barcode[j]
+                _, sj, ej, _ = barcode[j]
                 d = min([abs(ei - si) / 2, abs(ej - sj) / 2, max(abs(ej - ei), abs(sj - si))])
                 if d > 3:
                     mini = min(mini, d)
