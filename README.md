@@ -1,6 +1,8 @@
 # extended-persistence-metric-graph
 Implements an interactive metric graph editor with interactive extended persistence barcode computation
 
+![](png/interface.png)
+
 ## Install
 `pip3 install -r requirements.txt`
 
