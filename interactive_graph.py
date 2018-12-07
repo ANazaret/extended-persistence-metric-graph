@@ -10,8 +10,10 @@ from simplicial_complex import SimplicialComplex
 
 
 class InteractiveGraph:
-    def __init__(self, window):
+    def __init__(self, window, name='default'):
+        print("New interactive graph named:", name)
         self.window = window
+        self.name = name
         self.graph = Graph()
         self.edge_normals = dict()
 
@@ -52,8 +54,10 @@ class InteractiveGraph:
 
             if self.reebified is not None:
                 for i in range(self.graph.number_of_nodes, self.reebified.number_of_nodes):
-                    pygame.draw.circle(self.window, NODE_COLOR_REEB, self.reebified.node_positions[i].astype(int), int(NODE_RADIUS * 0.4))
-                    pygame.draw.circle(self.window, BLACK, self.reebified.node_positions[i].astype(int), int(NODE_RADIUS * 0.4), 1)
+                    pygame.draw.circle(self.window, NODE_COLOR_REEB, self.reebified.node_positions[i].astype(int),
+                                       int(NODE_RADIUS * 0.4))
+                    pygame.draw.circle(self.window, BLACK, self.reebified.node_positions[i].astype(int),
+                                       int(NODE_RADIUS * 0.4), 1)
 
         if not self.graph.is_connected:
             text = str('Graph is not connected (or less than 2 nodes)')
@@ -131,7 +135,7 @@ class InteractiveGraph:
             for j in range(i):
                 _, sj, ej = barcode[j]
                 d = min([abs(ei - si) / 2, abs(ej - sj) / 2, max(abs(ej - ei), abs(sj - si))])
-                if d > 0:
+                if d > 3:
                     mini = min(mini, d)
 
         self.radius = mini
@@ -178,3 +182,25 @@ class InteractiveGraph:
         self.graph.add_edge(u, v, w)
 
         self.edge_normals[(u, v)] = np.array([vy - uy, ux - vx]) / w
+
+    @staticmethod
+    def load_from_file(window, filename):
+        igraph = InteractiveGraph(window, filename)
+        with open(filename, 'r') as f:
+            n, e = map(int, f.readline().split(','))
+            for i in range(n):
+                x, y = map(int, f.readline().split(','))
+                igraph.add_node(x, y)
+            for _ in range(e):
+                u, v = map(int, f.readline().split(','))
+                igraph.add_edge(u, v)
+
+        return igraph
+
+    def write(self):
+        with open(self.name, 'w') as f:
+            f.write("%d, %d\n" % (self.graph.number_of_nodes, self.graph.number_of_edges))
+            for i in range(self.graph.number_of_nodes):
+                f.write("%d, %d\n" % (self.graph.node_positions[i][0], self.graph.node_positions[i][1]))
+            for u, v, w in self.graph.iter_edges():
+                f.write("%d, %d\n" % (u, v))

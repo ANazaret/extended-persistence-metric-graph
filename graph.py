@@ -17,6 +17,8 @@ class Graph:
         self.is_connected = True
         self.distances = dict()
 
+        self.number_of_edges = 0
+
     def add_node(self, node, position):
         if node not in self.nodes:
             self.nodes[node] = dict()
@@ -44,6 +46,8 @@ class Graph:
             maximum = max(maximum, self.distances[v][n])
 
         self.is_connected = maximum != inf
+
+        self.number_of_edges += 1
 
     def __getitem__(self, item):
         return self.nodes[item]
@@ -74,7 +78,7 @@ class Graph:
 
     def insert_point(self, u, v, alpha):
         new_point = self.number_of_nodes
-        self.add_node(new_point, (1-alpha)*self.node_positions[u] + alpha*self.node_positions[v])
+        self.add_node(new_point, (1 - alpha) * self.node_positions[u] + alpha * self.node_positions[v])
         self.add_edge(u, new_point, alpha * self.distances[u][v])
         self.add_edge(v, new_point, (1 - alpha) * self.distances[u][v])
 
