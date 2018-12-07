@@ -1,3 +1,5 @@
+from math import inf
+
 import numpy as np
 import pygame
 from pygame.locals import *
@@ -11,13 +13,14 @@ class InteractiveGraph:
     def __init__(self, window):
         self.window = window
         self.graph = Graph()
-        self.node_positions = dict()
         self.edge_normals = dict()
 
         self.focus_node = None
         self.edge_mode = None
 
         self.base_point = None
+        self.reebified = None
+        self.radius = None
 
         self.interactive_barcode = None
 
@@ -26,23 +29,31 @@ class InteractiveGraph:
 
     def draw(self):
         if self.edge_mode is not None:
-            pygame.draw.line(self.window, BLACK, self.node_positions[self.edge_mode], pygame.mouse.get_pos())
+            pygame.draw.line(self.window, BLACK, self.graph.node_positions[self.edge_mode], pygame.mouse.get_pos())
 
         for u, v, _ in self.graph.iter_edges():
             edge_color = NODE_COLOR_FOCUS if (self.base_point is not None and
                                               self.base_point[1] and
                                               u in self.base_point[2][:2] and
                                               v in self.base_point[2][:2]) else BLACK
-            pygame.draw.line(self.window, edge_color, self.node_positions[u], self.node_positions[v])
+            pygame.draw.line(self.window, edge_color, self.graph.node_positions[u], self.graph.node_positions[v])
 
-        for n in self.node_positions:
+        for n in self.graph.node_positions:
             node_color = NODE_COLOR_FOCUS if self.focus_node == n else NODE_COLOR
-            pygame.draw.circle(self.window, node_color, self.node_positions[n], NODE_RADIUS)
-            pygame.draw.circle(self.window, BLACK, self.node_positions[n], NODE_RADIUS, 1)
+            pygame.draw.circle(self.window, node_color, self.graph.node_positions[n], NODE_RADIUS)
+            pygame.draw.circle(self.window, BLACK, self.graph.node_positions[n], NODE_RADIUS, 1)
 
         if self.base_point is not None:
             pygame.draw.circle(self.window, NODE_COLOR_BASE, self.base_point[0], int(NODE_RADIUS * 0.8))
             pygame.draw.circle(self.window, BLACK, self.base_point[0], int(NODE_RADIUS * 0.8), 1)
+
+            if self.radius is not None and 1 < self.radius < WINDOW_SIZE:
+                pygame.draw.circle(self.window, (0, 0, 255), self.base_point[0], int(self.radius), 1)
+
+            if self.reebified is not None:
+                for i in range(self.graph.number_of_nodes, self.reebified.number_of_nodes):
+                    pygame.draw.circle(self.window, NODE_COLOR_REEB, self.reebified.node_positions[i].astype(int), int(NODE_RADIUS * 0.4))
+                    pygame.draw.circle(self.window, BLACK, self.reebified.node_positions[i].astype(int), int(NODE_RADIUS * 0.4), 1)
 
         if not self.graph.is_connected:
             text = str('Graph is not connected (or less than 2 nodes)')
@@ -76,7 +87,7 @@ class InteractiveGraph:
                 self.update_base_point(*event.pos)
 
     def find_node(self, x, y, distance):
-        for n, (nx, ny) in self.node_positions.items():
+        for n, (nx, ny) in self.graph.node_positions.items():
             if (nx - x) ** 2 + (ny - y) ** 2 <= distance:
                 return n
         return None
@@ -87,26 +98,43 @@ class InteractiveGraph:
         base_point = self.find_closest_point_on_edge(x, y)
         if base_point is not None:
             if type(base_point) == int:
-                self.base_point = (self.node_positions[base_point], False, base_point)
+                self.base_point = (self.graph.node_positions[base_point], False, base_point)
             else:
                 u, v, alpha = base_point
-                position = (1 - alpha) * self.node_positions[u] + alpha * self.node_positions[v]
+                position = (1 - alpha) * self.graph.node_positions[u] + alpha * self.graph.node_positions[v]
                 self.base_point = (position.astype(int), True, (u, v, alpha))
 
         self.update_barcode()
 
     def update_barcode(self):
         if self.base_point is None:
+            self.reebified = None
             return
 
+        graph = self.graph.copy()
         if self.base_point[1]:
             u, v, alpha = self.base_point[2]
-            graph, base_point = self.graph.copy_and_insert_base_point(u, v, alpha)
+            base_point = graph.insert_point(u, v, alpha)
         else:
-            graph, base_point = self.graph, self.base_point[2]
+            base_point = self.base_point[2]
+
+        graph.reebify(base_point)
+        self.reebified = graph
 
         filtration = SimplicialComplex.from_graph_extended(graph, base_point)
-        self.interactive_barcode.intervals = filtration.get_barcode()
+        barcode = filtration.get_barcode()
+        self.interactive_barcode.intervals = barcode
+
+        mini = inf
+        for i in range(len(barcode)):
+            _, si, ei = barcode[i]
+            for j in range(i):
+                _, sj, ej = barcode[j]
+                d = min([abs(ei - si) / 2, abs(ej - sj) / 2, max(abs(ej - ei), abs(sj - si))])
+                if d > 0:
+                    mini = min(mini, d)
+
+        self.radius = mini
         print(self.interactive_barcode.intervals)
 
     def find_closest_point_on_edge(self, x, y):
@@ -117,8 +145,8 @@ class InteractiveGraph:
         min_point = None
         for (u, v), normal in self.edge_normals.items():
             # Project to the line
-            x = x_ - self.node_positions[u][0]
-            y = y_ - self.node_positions[u][1]
+            x = x_ - self.graph.node_positions[u][0]
+            y = y_ - self.graph.node_positions[u][1]
             d = abs(normal.dot([x, y]))
             if d < min_distance:
                 # Check projection belongs to the segment
@@ -128,7 +156,7 @@ class InteractiveGraph:
                     min_point = (u, v, alpha / self.graph[u][v])
 
         # Check vertices
-        for n, (nx, ny) in self.node_positions.items():
+        for n, (nx, ny) in self.graph.node_positions.items():
             d2 = (nx - x_) ** 2 + (ny - y_) ** 2
             if d2 <= min_distance ** 2:
                 min_distance = d2 ** 0.5
@@ -138,14 +166,14 @@ class InteractiveGraph:
 
     def add_node(self, x, y):
         node = self.graph.number_of_nodes
-        self.graph.add_node(node)
-        self.node_positions[node] = np.array([x, y])
+        self.graph.add_node(node, np.array([x, y]))
+        self.graph.node_positions[node] = np.array([x, y])
 
     def add_edge(self, u, v):
         if u > v:
             u, v = v, u
-        ux, uy = self.node_positions[u]
-        vx, vy = self.node_positions[v]
+        ux, uy = self.graph.node_positions[u]
+        vx, vy = self.graph.node_positions[v]
         w = ((ux - vx) ** 2 + (uy - vy) ** 2) ** 0.5
         self.graph.add_edge(u, v, w)
 
