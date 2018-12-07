@@ -38,15 +38,17 @@ class Graph:
         self.distances[v][u] = self.distances[u][v]
 
         maximum = -1
-        for n in self.nodes:
-            self.distances[u][n] = min(self.distances[u][n], self.distances[u][v] + self.distances[v][n])
-            self.distances[n][u] = self.distances[u][n]
-            self.distances[v][n] = min(self.distances[v][n], self.distances[v][u] + self.distances[u][n])
-            self.distances[n][v] = self.distances[v][n]
-            maximum = max(maximum, self.distances[v][n])
+        for i in range(len(self.nodes)):
+            for j in range(i):
+                self.distances[i][j] = min([
+                    self.distances[i][j],
+                    self.distances[i][u] + w + self.distances[v][j],
+                    self.distances[i][v] + w + self.distances[u][j]
+                ])
+                self.distances[j][i] = self.distances[i][j]
+                maximum = max(maximum, self.distances[i][j])
 
         self.is_connected = maximum != inf
-
         self.number_of_edges += 1
 
     def __getitem__(self, item):
