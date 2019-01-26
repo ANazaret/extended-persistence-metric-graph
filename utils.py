@@ -9,19 +9,19 @@ def map_barcode_to_graph_vertices(barcode, filtration: SimplicialComplex, graph:
     distances = graph.distances[base_point]
 
     for interval in barcode:
-        d, s, e, t = interval
-        if d == 0:
+        dimension, start, end, _ = interval
+        if dimension == 0:
             continue
 
         vertices = [None, None]
-        for v, d in distances.items():
-            if abs(d - s) < EPSILON:
+        for v, dimension in distances.items():
+            if abs(dimension - start) < EPSILON:
                 vertices[0] = v
-            if abs(d - e) < EPSILON:
+            if abs(dimension - end) < EPSILON:
                 vertices[1] = v
-            if abs(d - 2 * infinity + s) < EPSILON:
+            if abs(dimension - 2 * infinity + start) < EPSILON:
                 vertices[0] = v
-            if abs(d - 2 * infinity + e) < EPSILON:
+            if abs(dimension - 2 * infinity + end) < EPSILON:
                 vertices[1] = v
         barcode_mapping[interval] = vertices
 
