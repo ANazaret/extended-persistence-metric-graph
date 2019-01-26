@@ -30,7 +30,7 @@ class InteractiveGraph:
     def bind_interactive_barcode(self, interactive_barcode):
         self.interactive_barcode = interactive_barcode
 
-    def draw(self):
+    def draw(self, reeb=True):
         if self.edge_mode is not None:
             pygame.draw.line(self.window, BLACK, self.graph.node_positions[self.edge_mode], pygame.mouse.get_pos())
 
@@ -40,6 +40,18 @@ class InteractiveGraph:
                                               u in self.base_point[2][:2] and
                                               v in self.base_point[2][:2]) else BLACK
             pygame.draw.line(self.window, edge_color, self.graph.node_positions[u], self.graph.node_positions[v])
+
+        if reeb and self.reebified is not None:
+            for u, v, _ in self.reebified.iter_edges():
+                edge_color = NODE_COLOR_FOCUS if (self.base_point is not None and
+                                                  self.base_point[1] and
+                                                  u in self.base_point[2][:2] and
+                                                  v in self.base_point[2][:2]) else BLACK
+                pygame.draw.line(self.window, edge_color,
+                                 [self.reebified.node_positions[u][0] + 2 * WINDOW_SIZE,
+                                  WINDOW_SIZE - self.reebified.distances[self.reebified.base_point_reeb][u]],
+                                 [self.reebified.node_positions[v][0] + 2 * WINDOW_SIZE,
+                                  WINDOW_SIZE - self.reebified.distances[self.reebified.base_point_reeb][v]])
 
         for n in self.graph.node_positions:
             node_color = NODE_COLOR_FOCUS if self.focus_node == n else NODE_COLOR

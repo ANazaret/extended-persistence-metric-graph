@@ -14,7 +14,7 @@ parser.add_argument('-g', '--graphfile',
 args = parser.parse_args()
 
 pygame.init()
-window = pygame.display.set_mode([WINDOW_SIZE * 2, WINDOW_SIZE])
+window = pygame.display.set_mode([WINDOW_SIZE * 3, WINDOW_SIZE])
 
 if args.graphfile:
     if os.path.exists(args.graphfile):
