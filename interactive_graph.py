@@ -1,3 +1,4 @@
+import itertools
 from math import inf
 
 import numpy as np
@@ -23,6 +24,7 @@ class InteractiveGraph:
 
         self.base_point = None
         self.reebified = None
+        self.inversions = None
         self.radius = None
 
         self.interactive_barcode = None
@@ -53,10 +55,20 @@ class InteractiveGraph:
                                  [self.reebified.node_positions[v][0] + 2 * WINDOW_SIZE,
                                   WINDOW_SIZE - self.reebified.distances[self.reebified.base_point_reeb][v]])
 
+        if self.inversions:
+            for n in range(self.graph.number_of_nodes, self.inversions.number_of_nodes):
+                pygame.draw.circle(self.window, YELLOW, self.inversions.node_positions[n].astype(int), 4)
+
         for n in self.graph.node_positions:
             node_color = NODE_COLOR_FOCUS if self.focus_node == n else NODE_COLOR
-            pygame.draw.circle(self.window, node_color, self.graph.node_positions[n], NODE_RADIUS)
+            if len(self.graph.nodes[n]) != 2:
+                pygame.draw.circle(self.window, node_color, self.graph.node_positions[n], NODE_RADIUS)
             pygame.draw.circle(self.window, BLACK, self.graph.node_positions[n], NODE_RADIUS, 1)
+
+            text = str(n)
+            font = pygame.font.Font('freesansbold.ttf', 15)
+            text = font.render(text, True, (255, 0, 0))
+            self.window.blit(text, self.graph.node_positions[n] - (5, 4))
 
         if self.base_point is not None:
             pygame.draw.circle(self.window, NODE_COLOR_BASE, self.base_point[0], int(NODE_RADIUS * 0.8))
@@ -94,6 +106,7 @@ class InteractiveGraph:
             if event.button == 1:
                 if self.edge_mode is not None and over_node is not None and self.edge_mode != over_node:
                     self.add_edge(self.edge_mode, over_node)
+                    self.find_inversions()
                 self.edge_mode = None
 
         if event.type == MOUSEMOTION:
@@ -129,11 +142,7 @@ class InteractiveGraph:
             return
 
         graph = self.graph.copy()
-        if self.base_point[1]:
-            u, v, alpha = self.base_point[2]
-            base_point = graph.insert_point(u, v, alpha)
-        else:
-            base_point = self.base_point[2]
+        base_point = graph.set_basepoint(self.base_point)
 
         graph.reebify(base_point)
         self.reebified = graph
@@ -157,6 +166,25 @@ class InteractiveGraph:
 
         self.radius = mini
         print(self.interactive_barcode.intervals)
+
+    def find_inversions(self):
+        graph = self.graph.copy()
+
+        for u, v in list(itertools.combinations(graph.nodes.keys(), 2)):
+            if len(graph.nodes[u]) == 2 or len(graph.nodes[v]) == 2:
+                continue
+            for a, b, dab in list(graph.iter_edges(True)):
+                if (graph.distances[a][u] <= graph.distances[a][v] and
+                        graph.distances[b][v] <= graph.distances[b][u]):
+                    daw = (dab + graph.distances[b][v] - graph.distances[a][u]) / 2
+                    daw /= dab
+                    if not (0 <= daw <= 1):
+                        print("FOCK")
+                        print(daw)
+                    else:
+                        graph.insert_point(a, b, daw)
+
+        self.inversions = graph
 
     def find_closest_point_on_edge(self, x, y):
         min_distance = 100000

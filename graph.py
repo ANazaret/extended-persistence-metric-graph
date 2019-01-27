@@ -18,6 +18,7 @@ class Graph:
         self.distances = dict()
 
         self.number_of_edges = 0
+        self.base_point_reeb = None
 
     def add_node(self, node, position):
         if node not in self.nodes:
@@ -28,6 +29,20 @@ class Graph:
             self.distances[node][node] = 0
 
             self.is_connected = False
+
+    def remove_val_2_node(self, node):
+        neighbors = self.nodes.pop(node)
+        w = 0
+        for u in neighbors:
+            w += self.nodes[u].pop(node)
+
+        u, v = neighbors.keys()
+        self.add_edge(u, v, w)
+
+        self.node_positions.pop(node)
+        self.distances.pop(node)
+        for d in self.nodes:
+            self.distances[d].pop(node)
 
     def add_edge(self, u, v, w):
         # Assume u, v already exist !
@@ -54,17 +69,29 @@ class Graph:
     def __getitem__(self, item):
         return self.nodes[item]
 
+    def has_edge(self, u, v):
+        return u in self.nodes and v in self.nodes[u]
+
     @property
     def number_of_nodes(self):
         return len(self.nodes)
 
-    def iter_edges(self):
+    def iter_edges(self, both=False):
         for u in self.nodes:
             for v in self.nodes[u]:
-                if u < v:
+                if both or u < v:
                     yield (u, v, self.nodes[u][v])
 
-    def reebify(self, base_point):
+    def set_basepoint(self, base_point):
+        if base_point[1]:
+            u, v, alpha = base_point[2]
+            base_point = self.insert_point(u, v, alpha)
+        else:
+            base_point = base_point[2]
+        self.base_point_reeb = base_point
+        return base_point
+
+    def reebify(self, base_point, delete_base_point=False):
         # Critical point on edge (u,v)
         # iff \exists alpha \in ]0, w_uv[, d[u] + alpha*w_uv = d[v] + (1_alpha)*w_uv
 
@@ -74,6 +101,9 @@ class Graph:
             alpha = (1 + (distances[v] - distances[u]) / w) / 2
             if EPSILON < alpha < 1 - EPSILON:
                 points_to_add.append((u, v, alpha))
+
+        if delete_base_point:
+            self.remove_val_2_node(base_point)
 
         for p in points_to_add:
             self.insert_point(*p)
