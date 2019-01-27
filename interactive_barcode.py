@@ -22,6 +22,9 @@ class InteractiveBarcode:
             if event.key == K_r:
                 self.reverse_barcode ^= True
 
+    def change_coordinates(self, x, y):
+        return [int(x / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - y / 2)]
+
     def draw(self):
         pygame.draw.line(self.window, BLACK,
                          self.origin,
@@ -41,12 +44,12 @@ class InteractiveBarcode:
 
         for d, s, e, t in self.intervals:
             pygame.draw.circle(self.window, COLORS_DIM_TYPE[d][t.value],
-                               [int(s / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - e / 2)], 5)
+                               self.change_coordinates(s, e), 5)
             if self.reverse_barcode and (d, s, e, t) in self.reverse_mapping:
                 birth, death = self.reverse_mapping[(d, s, e, t)]
                 pygame.draw.line(self.window, GREEN_B,
-                                 [int(s / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - e / 2)],
+                                 self.change_coordinates(s, e),
                                  self.reeb.node_positions[birth])
                 pygame.draw.line(self.window, RED_B,
-                                 [int(s / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - e / 2)],
+                                 self.change_coordinates(s, e),
                                  self.reeb.node_positions[death])

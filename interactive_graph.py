@@ -51,9 +51,24 @@ class InteractiveGraph:
                                                   v in self.base_point[2][:2]) else BLACK
                 pygame.draw.line(self.window, edge_color,
                                  [self.reebified.node_positions[u][0] + 2 * WINDOW_SIZE,
-                                  WINDOW_SIZE - self.reebified.distances[self.reebified.base_point_reeb][u]],
+                                  self.interactive_barcode.change_coordinates(0, self.reebified.distances[
+                                      self.reebified.base_point_reeb][u])[1]],
                                  [self.reebified.node_positions[v][0] + 2 * WINDOW_SIZE,
-                                  WINDOW_SIZE - self.reebified.distances[self.reebified.base_point_reeb][v]])
+                                  self.interactive_barcode.change_coordinates(0, self.reebified.distances[
+                                      self.reebified.base_point_reeb][v])[1]])
+
+            for n in self.reebified.node_positions:
+                if n >= self.graph.number_of_nodes:
+                    node_color = NODE_COLOR_REEB
+                else:
+                    node_color = NODE_COLOR
+                if n >= self.graph.number_of_nodes or len(self.reebified.nodes[n]) != 2:
+                    pygame.draw.circle(self.window, node_color,
+                                       [int(self.reebified.node_positions[n][0]) + 2 * WINDOW_SIZE,
+                                        self.interactive_barcode.change_coordinates(
+                                            0,
+                                            self.reebified.distances[self.reebified.base_point_reeb][n])[1]
+                                        ], 5)
 
         if self.inversions:
             for n in range(self.graph.number_of_nodes, self.inversions.number_of_nodes):
@@ -240,6 +255,7 @@ class InteractiveGraph:
                 u, v = map(int, f.readline().split(','))
                 igraph.add_edge(u, v)
 
+        igraph.find_inversions()
         return igraph
 
     def write(self):
