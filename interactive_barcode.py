@@ -20,7 +20,7 @@ class InteractiveBarcode:
     def handle_event(self, event):
         if event.type == KEYDOWN:
             if event.key == K_r:
-                self.reverse_barcode ^= True
+                self.reverse_barcode ^= True  # Abel : stylé
 
     def change_coordinates(self, x, y):
         return [int(x / 2 + self.origin[0]), int(self.origin[1] + self.barcode_size - y / 2)]

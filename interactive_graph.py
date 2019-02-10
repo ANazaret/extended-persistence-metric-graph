@@ -12,7 +12,7 @@ from simplicial_complex import SimplicialComplex
 
 
 class InteractiveGraph:
-    def __init__(self, window, name='default'):
+    def __init__(self, window, name='easy'):
         print("New interactive graph named:", name)
         self.window = window
         self.name = name
@@ -22,7 +22,7 @@ class InteractiveGraph:
         self.focus_node = None
         self.edge_mode = None
 
-        self.base_point = None
+        self.base_point = None  # Abel : format (position, not is_vertex, vertex_id or (u,v,alpha))
         self.reebified = None
         self.inversions = None
         self.radius = None
@@ -231,7 +231,7 @@ class InteractiveGraph:
     def add_node(self, x, y):
         node = self.graph.number_of_nodes
         self.graph.add_node(node, np.array([x, y]))
-        self.graph.node_positions[node] = np.array([x, y])
+        self.graph.node_positions[node] = np.array([x, y])  # Abel : Redundant ?
 
     def add_edge(self, u, v):
         if u > v:

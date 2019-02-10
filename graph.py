@@ -11,7 +11,7 @@ def infinity():
 
 class Graph:
     def __init__(self):
-        self.nodes = dict()
+        self.nodes = dict()  # Abel : edges weight
         self.node_positions = dict()
 
         self.is_connected = True
@@ -31,14 +31,17 @@ class Graph:
             self.is_connected = False
 
     def remove_val_2_node(self, node):
+
+        # Abel : erasing edges
         neighbors = self.nodes.pop(node)
         w = 0
-        for u in neighbors:
+        for u in neighbors:  # Abel : supposed to be of size 2
             w += self.nodes[u].pop(node)
 
         u, v = neighbors.keys()
         self.add_edge(u, v, w)
 
+        # Abel : ersaing the rest
         self.node_positions.pop(node)
         self.distances.pop(node)
         for d in self.nodes:
@@ -52,6 +55,7 @@ class Graph:
         self.distances[u][v] = min(w, self.distances[u][v])
         self.distances[v][u] = self.distances[u][v]
 
+        #Abel : updates other distances
         maximum = -1
         for i in range(len(self.nodes)):
             for j in range(i):
@@ -76,6 +80,7 @@ class Graph:
     def number_of_nodes(self):
         return len(self.nodes)
 
+    # Abel : both = (u,v) and (v,u)
     def iter_edges(self, both=False):
         for u in self.nodes:
             for v in self.nodes[u]:
