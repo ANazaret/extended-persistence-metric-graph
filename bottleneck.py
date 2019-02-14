@@ -1,6 +1,31 @@
 import networkx as nx
 
 
+# TODO : recheck
+# Returns true if dB(b1,b2) <= sup
+def bottleneck_is_less(b1, b2, sup):
+    dists = barcode_distances(b1, b2)
+    n1, n2 = len(b1), len(b2)
+
+    # Initializing Bipartite
+    G = nx.Graph()
+    G.add_nodes_from([('b1', i) for i in range(n1)], bipartite=0)
+    G.add_nodes_from([('b2_proj', i) for i in range(n2)], bipartite=0)
+    G.add_nodes_from([('b2', i) for i in range(n2)], bipartite=1)
+    G.add_nodes_from([('b1_proj', i) for i in range(n1)], bipartite=1)
+    top_nodes = [('b1', i) for i in range(n1)] + [('b2_proj', i) for i in range(n2)]
+
+    n = n1 + n2
+    count = 0
+    while count < len(dists) and dists[count][2] <= sup:
+        G.add_edge(dists[count][0], dists[count][1])
+        count += 1
+
+    matching = nx.bipartite.maximum_matching(G, top_nodes)
+    if len(matching) < 2 * n:
+        return False
+    return True
+
 # Convention :
 # - U : b1 , b2_proj
 # - V : b2, b1_proj
@@ -45,7 +70,7 @@ def bottleneck_if_less(b1, b2, sup):
     n = n1 + n2
     under_sup = []
     count = 0
-    while dists[count][2] <= sup:
+    while count < len(dists) and dists[count][2] <= sup:
         under_sup.append(dists[count])
         G.add_edge(dists[count][0], dists[count][1])
         count += 1
@@ -107,10 +132,17 @@ def bottleneck(b1, b2):
         matching = nx.bipartite.maximum_matching(G, top_nodes)
     return eps
 
-
+# UNUSED
 # Computes wheter bottleneck(b1,b2) is between down and up
 # Returns S, I1, M, I2, U if smaller, inside I1, middle, inside I2 or greater
 def bottleneck_is_between(b1, b2, I1, I2):
+
+    # Overused scheme
+    def fill_bipartite(bip, filler, limit):
+        while filler[0][2] < limit:
+            cur = filler.pop(0)
+            bip.add_edge(cur[0], cur[1])
+
     n1, n2 = len(b1), len(b2)
     dists = barcode_distances(b1, b2)
 
@@ -124,9 +156,7 @@ def bottleneck_is_between(b1, b2, I1, I2):
 
     n = n1 + n2
     nexts = dists.copy()
-    while nexts[0][2] < I2[1]:
-        cur = nexts.pop(0)
-        G.add_edge(cur[0], cur[1])
+    fill_bipartite(G, nexts, I2[1])
 
     # Need to begin by greater case because it is by far the most frequent
     matching = nx.bipartite.maximum_matching(G, top_nodes)
@@ -135,23 +165,18 @@ def bottleneck_is_between(b1, b2, I1, I2):
 
     G.remove_edges_from(list(G.edges.keys()))
     nexts = dists.copy()
-    while nexts[0][2] < I1[0]:
-        cur = nexts.pop(0)
-        G.add_edge(cur[0], cur[1])
+    fill_bipartite(G, nexts, I1[0])
+
     matching = nx.bipartite.maximum_matching(G, top_nodes)
     if len(matching) >= 2 * n:  # Should never be strictly
         return 'S'
 
-    while nexts[0][2] < I1[1]:
-        cur = nexts.pop(0)
-        G.add_edge(cur[0], cur[1])
+    fill_bipartite(G, nexts, I1[1])
     matching = nx.bipartite.maximum_matching(G, top_nodes)
     if len(matching) >= 2 * n:  # Should never be strictly
         return 'I1'
 
-    while nexts[0][2] < I2[0]:
-        cur = nexts.pop(0)
-        G.add_edge(cur[0], cur[1])
+    fill_bipartite(G, nexts, I2[0])
     matching = nx.bipartite.maximum_matching(G, top_nodes)
     if len(matching) >= 2 * n:  # Should never be strictly
         return 'M'
