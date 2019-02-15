@@ -1,7 +1,6 @@
 import numpy as np
 from graph import Graph
 
-# Contains utils for discretizer
 
 orientations = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', '']
 
@@ -77,33 +76,19 @@ def is_aligned(o, p1, p2, eps):
         return abs(p1[0] - p2[0]) < eps and abs(p1[1] - p2[1]) < eps
 
 
-# TODO : doubly coded ...
-# In the case points are aligned, returns the direction
-# eps is the precision
-def alignment(p1, p2, eps):
-    dx = p2[0] - p1[0]
-    dy = p2[1] - p1[1]
-    if abs(dy) < eps:
-        if dx > eps:
-            return 'E'
-        elif dx < eps:
-            return 'W'
-        else:
-            return ''
-    elif abs(dx) < eps:
-        if dy > eps:
-            return 'N'
-        else:
-            return 'S'
-    elif abs(dy-dx) < eps:
-        if dx > eps:
-            return 'NE'
-        else:
-            return 'SW'
-    elif abs(dy+dx) < eps:
-        if dx > eps:
-            return 'SE'
-        else:
-            return 'NW'
-    else:
-        return None
+def orientation_to_speed(o):
+    res = [0, 0]
+    for c in o:
+        if c == 'N':
+            res[1] += 1
+        elif c == 'E':
+            res[0] += 1
+        elif c == 'S':
+            res[1] -= 1
+        elif c == 'W':
+            res[0] -= 1
+    return tuple(res)
+
+
+def inf_dist(p, q):
+    return max(abs(p[0]-q[0]), abs(p[1] - q[1]))

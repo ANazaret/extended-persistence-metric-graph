@@ -1,7 +1,6 @@
 import networkx as nx
 
 
-# TODO : recheck
 # Returns true if dB(b1,b2) <= sup
 def bottleneck_is_less(b1, b2, sup):
     dists = barcode_distances(b1, b2)
@@ -25,6 +24,7 @@ def bottleneck_is_less(b1, b2, sup):
     if len(matching) < 2 * n:
         return False
     return True
+
 
 # Convention :
 # - U : b1 , b2_proj
@@ -132,7 +132,8 @@ def bottleneck(b1, b2):
         matching = nx.bipartite.maximum_matching(G, top_nodes)
     return eps
 
-# UNUSED
+
+# NEVER USED
 # Computes wheter bottleneck(b1,b2) is between down and up
 # Returns S, I1, M, I2, U if smaller, inside I1, middle, inside I2 or greater
 def bottleneck_is_between(b1, b2, I1, I2):
