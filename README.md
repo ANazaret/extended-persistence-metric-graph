@@ -8,8 +8,8 @@ Implements an interactive metric graph editor with interactive extended persiste
 
 (requirements are simply numpy for computations and pygame for the rendering)
 
-## Example
-run `python3 main.py -g loops.g`
+## Example interactive viewer
+run `python3 main.py -g "graphs/loops.g"`
 
 ## Commands
 
@@ -23,3 +23,6 @@ run `python3 main.py -g loops.g`
 - Graph has to be connected to compute barcode
 - The computed reeb graph (associated to the sublevelset of the distance function to the base_point) is displayed in red (only the additional points)
 - The base_point is in green
+
+## Example encoder-decoder
+run `python3 discretize_tester.py`
