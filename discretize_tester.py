@@ -74,4 +74,7 @@ def test_cardinality(filename, eps):
 # test_cardinality('test_graphs/medium', 0.1)
 # test_cardinality('test_graphs/hard', 0.1)  # Errors when decoding
 # test_cardinality('test_graphs/hard', 0.01)  # No error when decoding
-test_reconstruction('test_graphs/hard', 0.01, 0.001)
+
+
+# test_reconstruction('test_graphs/hard', 0.01, 0.001)
+test_reconstruction('test_graphs/easy', 0.1, 0.001)

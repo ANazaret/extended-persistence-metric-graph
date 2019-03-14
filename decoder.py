@@ -6,7 +6,7 @@ from compass import *
 
 def barcode_set_to_graph(barcodes, precision):
     measured_eps = find_eps(barcodes)
-    eps_neigh = find_eps_neighbour(barcodes, measured_eps, 0.2)  # CC Achille
+    eps_neigh = find_eps_neighbour(barcodes, measured_eps, 0.2)
     arities = dict()
     unmatched_arity_2 = []
 
@@ -111,12 +111,12 @@ def shoot(barcodes, directions, unmatched_arity_2, arities, eps_neigh, precision
         print("Base shooter is now ", base_shooter_id)
         directions_of_ref = directions[base_shooter_id]
 
-        # Iterating over the aiming directions (=aiming_pt_id) from base_shooter
+        # Iterating over the aiming directions (=aiming_point_id) from base_shooter
         while directions_of_ref:
-            aiming_pt_id = random.choice(list(directions_of_ref.keys()))
-            direction = directions_of_ref.pop(aiming_pt_id)
-            shooter_id = base_shooter_id
-            print("Aiming point id is ", aiming_pt_id)
+            aiming_point_id = random.choice(list(directions_of_ref.keys()))
+            direction = directions_of_ref.pop(aiming_point_id)
+            start_point_id = base_shooter_id
+            print("Aiming point id is ", aiming_point_id)
 
             # Cleaning
             if not directions[base_shooter_id]:
@@ -125,42 +125,46 @@ def shoot(barcodes, directions, unmatched_arity_2, arities, eps_neigh, precision
             # Breaks when arrived on a point of arity different than 2
             arrived = False
             while not arrived:
-                barcodes_to_test = [j for j in range(len(barcodes)) if j not in [shooter_id, aiming_pt_id]
+                barcodes_to_test = [j for j in range(len(barcodes)) if j not in [start_point_id, aiming_point_id]
                                     and (j in unmatched_arity_2 or j in directions.keys())]
 
-                match_id, weight = match_barcodes(shooter_id, direction, barcodes, barcodes_to_test, precision)
-                assert len(eps_neigh[match_id]) == 1  # Assert this point is an aiming point
-                next_shooter_id = list(eps_neigh[match_id])[0]
-                edge = (shooter_id, next_shooter_id, weight)
+                first_collision_id, next_start_id, weight = match_barcodes(start_point_id, direction, barcodes, barcodes_to_test, precision)
+                edge = (start_point_id, next_start_id, weight)
                 edges.append(edge)
                 print("Added edge : ", edge)
-                shooter_id = next_shooter_id
+                start_point_id = next_start_id
 
                 # If we reached a point with arity diff than 2
-                if arities[shooter_id] != 2:
-                    print("Shoot arrived at : ", shooter_id)
+                if arities[start_point_id] != 2:
+                    print("Shoot arrived at : ", start_point_id)
                     print(" ")
-                    # Removes direction from shooter_id
-                    directions[shooter_id].pop(match_id)
-                    if not directions[shooter_id]:
-                        directions.pop(shooter_id)
+                    # Removes direction from start_point_id
+                    directions[start_point_id].pop(first_collision_id)
+                    if not directions[start_point_id]:
+                        directions.pop(start_point_id)
                     arrived = True
 
                 # Otherwise continue by finding next shooter point and computing the correspondent speed
                 else:
-                    unmatched_arity_2.remove(shooter_id)
-                    a, b = list(eps_neigh[shooter_id])
-                    if a == match_id:
-                        aiming_pt_id = b
+                    unmatched_arity_2.remove(start_point_id)
+                    a, b = list(eps_neigh[start_point_id])
+                    if a == first_collision_id:
+                        aiming_point_id = b
                     else:
-                        assert b == match_id
-                        aiming_pt_id = a
-                    direction = barcode_speed(barcodes[shooter_id], arities[shooter_id], barcodes[aiming_pt_id], precision)
+                        assert b == first_collision_id
+                        aiming_point_id = a
+                    direction = barcode_speed(barcodes[start_point_id], arities[start_point_id], barcodes[aiming_point_id], precision)
         print("")
     return edges
 
 
-# Returns the "nearest" barcode from ref_barcode shooting with ref_direction
+def get_moving_point(barcode, directions):
+    for i, p in enumerate(barcode):
+        if directions[i] != '':
+            return i
+
+
+# Returns the  TWO nearest barcode from ref_barcode shooting with ref_direction
 # To do so, first finds suspects (= have one point aligned with some fixed point of ref_barcode and compute
 # the distance with these 2 points)
 # Then order those suspects by the distance and for all ref_barcode points try to find a match at app. this distance in
@@ -168,7 +172,8 @@ def shoot(barcodes, directions, unmatched_arity_2, arities, eps_neigh, precision
 # Returns the first one we found = the nearest
 def match_barcodes(ref_barcode_id, ref_direction, barcodes,  barcodes_to_test, precision):
     ref_barcode = barcodes[ref_barcode_id]
-    base_point = random.randint(0, len(ref_barcode[0])-1)  # TODO : randomize everywhere or just one time ?
+    base_point = get_moving_point(ref_barcode, ref_direction)
+
     suspects = []
 
     for i in barcodes_to_test:
@@ -188,6 +193,7 @@ def match_barcodes(ref_barcode_id, ref_direction, barcodes,  barcodes_to_test, p
 
     suspects.sort(key=lambda x: x[1])  # We want to find the nearest
 
+    first = None  # First barcode matched
     for i, min_ in suspects:
         b_copy = barcodes[i].copy()
         for j, p in enumerate(ref_barcode):
@@ -201,7 +207,10 @@ def match_barcodes(ref_barcode_id, ref_direction, barcodes,  barcodes_to_test, p
             else:
                 break
         if not b_copy:  # Means we matched all points
-            return i, min_
+            if first is None:
+                first = i
+            else:
+                return first, i, min_
 
     raise ValueError('Matching barcode not found {0} , {1}, {2}'.format(ref_barcode, barcodes_to_test, precision))
 

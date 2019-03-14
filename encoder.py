@@ -37,8 +37,12 @@ def compute_barcode(graph, base_point):
 
 
 def graph_to_barcode_set(graph, eps):
+    a = graph.number_of_nodes
     add_inversions(graph)
+    b = graph.number_of_nodes
     discretize(graph, eps)
+    c = graph.number_of_nodes
+    print('Graph nodes : {} -> {} ->  {}'.format(a,b,c))
     return discrete_barcode_tranform(graph)
 
 
